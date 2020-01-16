@@ -135,7 +135,7 @@ function checkout_overlay_master()
 	infomsg "Checking out overlay (master)"
 	local overlay_dir="/var/db/repos/action-ebuild-release"
 	mkdir -p "${overlay_dir}"
-	cd "${overlay_dir}"
+	cd "${overlay_dir}" || die "Unable to change to overlay directory (${overlay_dir})"
 	git init
 	git remote add github "git@github.com:${1}.git"
 	git pull github master
