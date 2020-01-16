@@ -383,9 +383,9 @@ function run_coverage_tests()
 	
 	infomsg "Performing coverage tests"
     chmod g+rX -R /var/tmp/portage
-    pushd "/var/tmp/portage/${ebuild_cat}/${ebuild_pkg}-9999/work/${ebuild_pkg}-9999/" >/dev/null
+    pushd "/var/tmp/portage/${ebuild_cat}/${ebuild_pkg}-9999/work/${ebuild_pkg}-9999/" >/dev/null || die "Unable to change to build directory" 
     su --preserve-environment testrunner -c "${GITHUB_WORKSPACE}/.gentoo/coverage.sh" || die "Test coverage report generation failed"
-    popd
+    popd || die "Unexpected popd error!"
     codecov -s /var/tmp/coverage -B "${GITHUB_REF##*/}" || die "Unable to upload coverage report"
 }
 
