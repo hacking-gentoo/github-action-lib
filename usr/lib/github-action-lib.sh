@@ -7,6 +7,13 @@ function die()
     exit 1
 }
 
+function finish()
+{
+    echo "$1"
+    echo "------------------------------------------------------------------------------------------------------------------------"
+    exit 0
+}
+
 function infomsg()
 {
 	echo -e "\n${1}\n"
@@ -226,6 +233,39 @@ function copy_ebuild_directory()
 	cp -R "${GITHUB_WORKSPACE}/.gentoo/${1}/${2}"/* "${1}/${2}/" || die "Unable to copy ebuild directory"
 }
 
+# Create a test ebuild in the test overlay from a template
+#
+# $1 - repository path
+# $2 - repository id
+# $3 - ebuild category
+# $4 - ebuild package
+# $5 - ebuild template filename
+# $6 - ebuild path
+#
+function create_test_ebuild()
+{
+	local repo_path repo_id ebuild_cat ebuild_pkg ebuild_name ebuild_path
+	repo_path="${1}"
+	repo_id="${2}"
+	ebuild_cat="${3}"
+	ebuild_pkg="${4}"
+	ebuild_name="${5}"
+	ebuild_path="${6}"
+	
+	infomsg "Configuring package in test overlay"
+	mkdir -p "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}" "${repo_path}/${repo_id}/metadata" "${repo_path}/${repo_id}/profiles"
+	echo "masters = gentoo" >> "${repo_path}/${repo_id}/metadata/layout.conf"
+	echo "${ebuild_cat}" >> "${repo_path}/${repo_id}/profiles/categories"
+	echo "${repo_id}" >> "${repo_path}/${repo_id}/profiles/repo_name"
+	cp -r ".gentoo/${ebuild_cat}/${ebuild_pkg}"/* "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/"
+	unexpand --first-only -t 4 ".gentoo/${ebuild_path}" > "${repo_path}/${repo_id}/${ebuild_path}"
+	if [[ "${INPUT_PACKAGE_ONLY}" != "true" ]]; then
+		sed-or-die "GITHUB_REPOSITORY" "${GITHUB_REPOSITORY}" "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}"
+		sed-or-die "GITHUB_REF" "${git_branch:-master}" "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}"
+	fi
+	ebuild "${repo_path}/${repo_id}/${ebuild_cat}/${ebuild_pkg}/${ebuild_name}" manifest
+}
+
 # Create live ebuild from template
 #
 # $1 - ebuild category - eg "dev-libs"
@@ -305,6 +345,60 @@ function create_new_ebuild()
 	ebuild "${ebuild_file_new}" manifest --force
 }
 
+# Install dependencies of test ebuild
+#
+# $1 - ebuild category
+# $2 - ebuild package
+# $3 - repository id
+#
+function install_ebuild_deps()
+{
+	infomsg "Installing dependencies of test ebuild"
+	emerge --autounmask y --autounmask-write y --autounmask-only y "${1}/${2}::${3}" || \
+	    die "Unable to un-mask dependencies"
+	etc-update --automode -5
+	emerge --onlydeps "${1}/${2}::${3}" || die "Unable to merge dependencies"
+}
+
+# Run ebuild tests
+#
+# $1 - path to the ebuild to test
+#
+function run_ebuild_tests()
+{
+	infomsg "Testing the ebuild"
+	TERM="dumb" ebuild "${1}" test || die "Package failed tests"
+}
+
+# Run coverage test script and upload coverage report using codecov
+#
+# $1 - ebuild category
+# $2 - ebuild package
+#
+function run_coverage_tests()
+{
+	local ebuild_cat ebuild_pkg
+	ebuild_cat="${1}"
+	ebuild_pkg="${2}"
+	
+	infomsg "Performing coverage tests"
+    chmod g+rX -R /var/tmp/portage
+    pushd "/var/tmp/portage/${ebuild_cat}/${ebuild_pkg}-9999/work/${ebuild_pkg}-9999/" >/dev/null
+    su --preserve-environment testrunner -c "${GITHUB_WORKSPACE}/.gentoo/coverage.sh" || die "Test coverage report generation failed"
+    popd
+    codecov -s /var/tmp/coverage -B "${GITHUB_REF##*/}" || die "Unable to upload coverage report"
+}
+
+# Run the merge phase of an ebuild
+#
+# $1 - path to the ebuild to merge
+#
+function merge_ebuild()
+{
+	infomsg "Merging the test ebuild"
+	ebuild "${1}" merge || die "Package failed merge"
+}
+
 # Check the overlay in the CWD with repoman
 #
 function repoman_check()
@@ -368,4 +462,18 @@ function create_pull_request()
         curl -sSL -H "${auth_hdr}" -H "${header}" --user "${GITHUB_ACTOR}:" -X POST --data "${data}" "${pulls_url}" || \
         	die "Unable to create pull request"
     fi
+}
+
+# Clean redundant binary packages
+function clean_binary_packages()
+{
+	infomsg "Cleaning any redundant binary packages"
+	eclean-pkg --deep
+}
+
+# Clean redundant distfiles
+function clean_distfiles()
+{
+	infomsg "Cleaning any redundant distfiles"
+	eclean-dist --deep
 }
