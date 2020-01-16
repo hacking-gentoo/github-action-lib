@@ -28,11 +28,11 @@ function teardown() {
 	assert_line "A test message"
 }
 
-@test "find_ebuild_template fail" {
-	run find_ebuild_template
-	
-	assert_failure
-}
+#@test "find_ebuild_template fail" {
+#	run find_ebuild_template
+#	
+#	assert_failure
+#}
 
 @test "find_ebuild_template good" {
 	
