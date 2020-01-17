@@ -199,14 +199,17 @@ function git_push()
 #
 function configure_overlay()
 {
+	local repo_name
+	
 	infomsg "Adding overlay to repos.conf"
 	repo_name="$(cat profiles/repo_name 2>/dev/null || true)"
 	[[ -z "${repo_name}" ]] && repo_name="action-ebuild-release"
 	cat << END > /etc/portage/repos.conf/action-ebuild-release
 [${repo_name}]
 priority = 50
-location = ${overlay_dir}
+location = /var/db/repos/action-ebuild-release
 END
+	echo "${repo_name}"
 }
 
 # Check that an ebuild category exists and create it if not.
