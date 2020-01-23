@@ -278,20 +278,27 @@ function create_live_ebuild()
 {
 	local ebuild_file_live	
 	ebuild_file_live="${1}/${2}/${3}"
-	infomsg "Creating live ebuild (${ebuild_file_live})"
-	unexpand --first-only -t 4 "${GITHUB_WORKSPACE}/.gentoo/${ebuild_file_live}" > "${ebuild_file_live}" 
-	if [[ "${INPUT_PACKAGE_ONLY}" != "true" ]]; then
-		replace_in_file "GITHUB_REPOSITORY" "${GITHUB_REPOSITORY}" "${ebuild_file_live}"
-		replace_in_file "GITHUB_REF" "master" "${ebuild_file_live}"
+
+	# If there is a KEYWORDS variable...
+	if grep KEYWORDS <"${ebuild_file_live}" >/dev/null; then
+		infomsg "Creating live ebuild (${ebuild_file_live})"
+		unexpand --first-only -t 4 "${GITHUB_WORKSPACE}/.gentoo/${ebuild_file_live}" > "${ebuild_file_live}" 
+		if [[ "${INPUT_PACKAGE_ONLY}" != "true" ]]; then
+			replace_in_file "GITHUB_REPOSITORY" "${GITHUB_REPOSITORY}" "${ebuild_file_live}"
+			replace_in_file "GITHUB_REF" "master" "${ebuild_file_live}"
+		fi
+		
+		# Fix up the KEYWORDS variable in the new ebuild - 9999 live version.
+		infomsg "Fixing up KEYWORDS variable in new ebuild - live version"
+		sed -i 's/^KEYWORDS.*/KEYWORDS=""/g' "${ebuild_file_live}"
+		
+		# Build / rebuild manifests
+		infomsg "Rebuilding manifests (live ebuild)" 
+		ebuild "${ebuild_file_live}" manifest --force
+	else
+		infomsg "No KEYWORDS variable in ebuild - removing live version"
+		rm "${ebuild_file_live}"
 	fi
-	
-	# Fix up the KEYWORDS variable in the new ebuild - 9999 live version.
-	infomsg "Fixing up KEYWORDS variable in new ebuild - live version"
-	sed -i 's/^KEYWORDS.*/KEYWORDS=""/g' "${ebuild_file_live}"
-	
-	# Build / rebuild manifests
-	infomsg "Rebuilding manifests (live ebuild)" 
-	ebuild "${ebuild_file_live}" manifest --force
 }
 
 # Create a new versioned ebuild from the template
