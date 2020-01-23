@@ -201,7 +201,6 @@ function configure_overlay()
 {
 	local repo_name
 	
-	infomsg "Adding overlay to repos.conf"
 	repo_name="$(cat profiles/repo_name 2>/dev/null || true)"
 	[[ -z "${repo_name}" ]] && repo_name="action-ebuild-release"
 	cat << END > /etc/portage/repos.conf/action-ebuild-release
@@ -305,7 +304,7 @@ function create_live_ebuild()
 #
 function create_new_ebuild()
 {
-	local ebuild_cat ebuild_pkg ebuild_ver ebuild_path repo_name
+	local ebuild_cat ebuild_pkg ebuild_ver ebuild_path repo_name ebuild_keywords
 	ebuild_cat="${1}"
 	ebuild_pkg="${2}"
 	ebuild_ver="${3}"
@@ -328,19 +327,28 @@ function create_new_ebuild()
 	infomsg "New ebuild (${ebuild_file_new}):" 
 	cat "${ebuild_file_new}"
 	
-	# If no KEYWORDS are specified try to calculate the best keywords
-	if [[ -z "$(unstable_keywords "${ebuild_file_new}")" ]]; then
-		echo "kwtool b ${ebuild_cat}/${ebuild_pkg}-${ebuild_ver}::${repo_name}"
-		kwtool -N b "${ebuild_cat}/${ebuild_pkg}-${ebuild_ver}::${repo_name}"
-		new_keywords="$(kwtool b "${ebuild_cat}/${ebuild_pkg}-${ebuild_ver}")"
-		echo "Using best keywords: ${new_keywords}"
-		sed-or-die '^KEYWORDS.*' "KEYWORDS=\"${new_keywords}\"" "${ebuild_file_new}"
-	fi
-	
-	# If this is a pre-release then fix the KEYWORDS variable
-	if [[ $(jq ".release.prerelease" "${GITHUB_EVENT_PATH}") == "true" ]]; then
-		new_keywords="$(unstable_keywords "${ebuild_file_new}")"
-		sed-or-die '^KEYWORDS.*' "KEYWORDS=\"${new_keywords}\"" "${ebuild_file_new}"
+	# If there is a KEYWORDS variable...
+	if grep KEYWORDS <"${ebuild_file_new}" >/dev/null; then
+		ebuild_keywords="$(unstable_keywords "${ebuild_file_new}")"
+		# If no KEYWORDS are specified try to calculate the best keywords
+		if [[ -z "${ebuild_keywords}" ]]; then
+			echo "kwtool b ${ebuild_cat}/${ebuild_pkg}-${ebuild_ver}::${repo_name}"
+			kwtool -N b "${ebuild_cat}/${ebuild_pkg}-${ebuild_ver}::${repo_name}"
+			new_keywords="$(kwtool b "${ebuild_cat}/${ebuild_pkg}-${ebuild_ver}")"
+			echo "Using best KEYWORDS: ${new_keywords}"
+			sed-or-die '^KEYWORDS.*' "KEYWORDS=\"${new_keywords}\"" "${ebuild_file_new}"
+		else
+			echo "Using supplied KEYWORDS: ${ebuild_keywords}"
+		fi
+
+		# If this is a pre-release then fix the KEYWORDS variable
+		if [[ $(jq ".release.prerelease" "${GITHUB_EVENT_PATH}") == "true" ]]; then
+			new_keywords="$(unstable_keywords "${ebuild_file_new}")"
+			echo "Pre-release KEYWORDS: ${new_keywords}"
+			sed-or-die '^KEYWORDS.*' "KEYWORDS=\"${new_keywords}\"" "${ebuild_file_new}"
+		fi
+	else
+		echo "No KEYWORDS variable located, skipping"
 	fi
 	
 	# Build / rebuild manifests
