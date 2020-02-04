@@ -126,6 +126,8 @@ function teardown() {
 	{
 		GITHUB_WORKSPACE="$(realpath tests/sup)"
 		GITHUB_REPOSITORY="hacking-actions/test-package"
+		cp -R tests/sup/repo/* "$TEST_TEMP_DIR/"
+		
 		cd "$TEST_TEMP_DIR"
 		copy_ebuild_directory "dev-libs" "test-package"
 		create_live_ebuild "dev-libs" "test-package" "test-package-9999.ebuild"
