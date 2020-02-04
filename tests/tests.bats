@@ -119,26 +119,26 @@ function teardown() {
 	temp_del "$TEST_TEMP_DIR"
 }
 
-#@test "create_live_ebuild" {
-#    TEST_TEMP_DIR="$(temp_make)"
-#	
-#	function testit()
-#	{
-#		GITHUB_WORKSPACE="$(realpath tests/sup)"
-#		GITHUB_REPOSITORY="hacking-actions/test-package"
-#		cd "$TEST_TEMP_DIR"
-#		mkdir -p "dev-libs/test-package"
-#		create_live_ebuild "dev-libs" "test-package" "test-package-9999.ebuild"
-#	}
-#	run testit
-#	
-#	assert_success
-#	assert_file_exist "$TEST_TEMP_DIR/dev-libs/test-package/test-package-9999.ebuild"
-#	assert_file_exist "$TEST_TEMP_DIR/dev-libs/test-package/Manifest"
-#	
-#	temp_del "$TEST_TEMP_DIR"
-#}
-#
+@test "create_live_ebuild" {
+    TEST_TEMP_DIR="$(temp_make)"
+	
+	function testit()
+	{
+		GITHUB_WORKSPACE="$(realpath tests/sup)"
+		GITHUB_REPOSITORY="hacking-actions/test-package"
+		cd "$TEST_TEMP_DIR"
+		mkdir -p "dev-libs/test-package"
+		create_live_ebuild "dev-libs" "test-package" "test-package-9999.ebuild"
+	}
+	run testit
+	
+	assert_success
+	assert_file_exist "$TEST_TEMP_DIR/dev-libs/test-package/test-package-9999.ebuild"
+	assert_file_exist "$TEST_TEMP_DIR/dev-libs/test-package/Manifest"
+	
+	temp_del "$TEST_TEMP_DIR"
+}
+
 #@test "create_new_ebuild" {
 #    TEST_TEMP_DIR="$(temp_make)"
 #	
