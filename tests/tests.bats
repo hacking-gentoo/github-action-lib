@@ -7,7 +7,7 @@ load '/usr/lib/bats-assert/load.bash'
 load '/usr/lib/bats-file/load.bash'
 
 function setup() {
-	:
+	BATS_TMPDIR="/var/tmp"
 }
 
 function teardown() {
