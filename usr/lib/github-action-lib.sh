@@ -424,7 +424,7 @@ function merge_ebuild()
 function repoman_check()
 {
 	infomsg "Checking with repoman"
-	repoman --straight-to-stable -dx full
+	repoman --straight-to-stable --if-modified=y -dx full
 }
 
 # Create a pull request
