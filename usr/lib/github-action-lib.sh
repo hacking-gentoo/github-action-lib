@@ -154,9 +154,11 @@ function checkout_overlay_master()
 #
 function checkout_or_create_overlay_branch()
 {
-	infomsg "Checking out or creating overlay branch (${1})"
-	git pull github "${1}" 2>/dev/null || true
-	git checkout -b "${1}"
+	if [[ "${1}" != "master" ]]; then
+		infomsg "Checking out or creating overlay branch (${1})"
+		git pull github "${1}" 2>/dev/null || true
+		git checkout -b "${1}"
+	fi
 }
 
 # Attempt to rebase the current branch against master ignoring errors
