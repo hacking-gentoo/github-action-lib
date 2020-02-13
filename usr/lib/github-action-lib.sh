@@ -377,7 +377,7 @@ function install_ebuild_deps()
 	emerge --autounmask y --autounmask-write y --autounmask-only y "${1}/${2}::${3}" || \
 	    die "Unable to un-mask dependencies"
 	etc-update --automode -5
-	emerge --onlydeps "${1}/${2}::${3}" || die "Unable to merge dependencies"
+	emerge --onlydeps --onlydeps-with-rdeps=n "${1}/${2}::${3}" || die "Unable to merge dependencies"
 }
 
 # Run ebuild tests
