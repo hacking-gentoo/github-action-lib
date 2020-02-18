@@ -374,10 +374,10 @@ function create_new_ebuild()
 function install_ebuild_deps()
 {
 	infomsg "Installing dependencies of test ebuild"
-	emerge --autounmask y --autounmask-write y --autounmask-only y "${1}/${2}::${3}" || \
+	emerge --with-bdeps=y --autounmask y --autounmask-write y --autounmask-only y "${1}/${2}::${3}" || \
 	    die "Unable to un-mask dependencies"
 	etc-update --automode -5
-	emerge --onlydeps --onlydeps-with-rdeps=n "${1}/${2}::${3}" || die "Unable to merge dependencies"
+	emerge --with-bdeps=y --onlydeps --onlydeps-with-rdeps=n "${1}/${2}::${3}" || die "Unable to merge dependencies"
 }
 
 # Run ebuild tests
